@@ -1,0 +1,72 @@
+private void fillAllCells(WorkSheetData workSheetData) {
+    Map<Long, Map<ExceptionRunObject, AmountObject>> instrExcMap = workSheetData.getRunExcMap();
+    Map<Long, AmountObject> runTotalMap = getRunTotalInfo(workSheetData);
+    
+    List<Integer> sheets = new ArrayList<>(runSheet.keySet());
+    Collections.sort(sheets);
+    
+    int t = 0;
+    for (Integer sheetNo : sheets) {
+        String sheetName = EXCEPTION_INSTR + sheetNo;
+        Sheet workSheet = workBook.createSheet(sheetName);
+        workSheet.autoSizeColumn(0);
+        
+        // Create Header Rows
+        Row headRow = workSheet.createRow(startingCellRow - 1); // Header row (row 6)
+        Row dataRow = workSheet.createRow(startingCellRow);      // Data row (row 7)
+        
+        List<Long> runIds = runSheet.get(sheetNo);
+        Collections.sort(runIds);
+
+        for (Long runId : runIds) {
+            // Set up headers in row 6 (startingCellRow - 1)
+            applyStyleToHeaderCells(headRow, t);
+            
+            // Place Run ID and Run Name in row 6
+            Cell headCell = headRow.createCell(t);
+            String runHeader = "Run Id: " + runId.toString() + " : " + getRunName(runId);
+            headCell.setCellValue(new XSSFRichTextString(runHeader));
+            headCell.setCellStyle(this.style);
+            workSheet.addMergedRegion(new CellRangeAddress(startingCellRow - 1, startingCellRow - 1, t, t + 4));
+            
+            // Set up headers for Instrument, Exception Message, Error Type, Data, Total in row 7 (startingCellRow)
+            createInstrumentRow(dataRow, t, "Instrument", "Exception Message", instrExcMap.get(runId));
+            
+            // Move the column index for the next set of Run ID and related data
+            t += 5; // Adjust according to the number of columns used for each runId set
+        }
+    }
+}
+
+// Method to apply styles to header cells (runId and runName)
+private int applyStyleToHeaderCells(Row headRow, int t) {
+    // Set the style for Run ID and Run Name, assuming they take 5 cells horizontally
+    for (int i = 0; i < 5; i++) {
+        Cell cell = headRow.createCell(t + i);
+        cell.setCellStyle(this.style);
+    }
+    return t + 5; // Return the new column index after the header
+}
+
+// Method to create and style the Instrument row data
+private void createInstrumentRow(Row row, int t, String instrType, String excStr, Map<ExceptionRunObject, AmountObject> excObjMap) {
+    Cell cell = row.createCell(t);
+    cell.setCellValue(new XSSFRichTextString(instrType));
+    cell.setCellStyle(this.style);
+    
+    cell = row.createCell(t + 1);
+    cell.setCellValue(new XSSFRichTextString(excStr));
+    cell.setCellStyle(this.wrapStyle);
+    
+    cell = row.createCell(t + 2);
+    cell.setCellValue(new XSSFRichTextString("Error Type"));
+    cell.setCellStyle(this.wrapStyle);
+    
+    cell = row.createCell(t + 3);
+    cell.setCellValue(new XSSFRichTextString("Data"));
+    cell.setCellStyle(this.style);
+    
+    cell = row.createCell(t + 4);
+    cell.setCellValue(new XSSFRichTextString("Total"));
+    cell.setCellStyle(this.style);
+}
